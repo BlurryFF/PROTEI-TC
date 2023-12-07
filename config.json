@@ -1,0 +1,19 @@
+{
+  "grpc": {
+    "ip":         "127.0.0.1",
+    "port":       ":8081",
+    "queueSize":  10,
+    "numWorkers": 5
+  },
+  "http": {
+    "ip":   "localhost",
+    "port": ":8080",
+    "auth": {
+      "username": "admin",
+      "pass":     "qwerty"
+    },
+    "absencesFileName": "absences.json",
+    "employeesFileName": "employees.json",
+    "baseStoragePath": "internal/http/storage/"
+  }
+}

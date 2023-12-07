@@ -1,0 +1,23 @@
+[
+  {
+    "ID": 1,
+    "DisplayName": "Pavel Andreev",
+    "Email": "pavel@gmail.com",
+    "MobilePhone": "+79377232526",
+    "WorkPhone": "1237"
+  },
+  {
+    "ID": 2,
+    "DisplayName": "Anoshin Andrey",
+    "Email": "andreev@gmail.com",
+    "MobilePhone": "+79377242526",
+    "WorkPhone": "1542"
+  },
+  {
+    "ID": 3,
+    "DisplayName": "Alexey Aristov",
+    "Email": "lexa15@gmail.com",
+    "MobilePhone": "+79370000002",
+    "WorkPhone": "0508"
+  }
+]
