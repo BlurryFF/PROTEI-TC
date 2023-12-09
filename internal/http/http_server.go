@@ -3,12 +3,12 @@ package httpserver
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 	"uDES/internal/config"
+	"uDES/internal/logger"
 	"uDES/internal/models"
 )
 
@@ -18,7 +18,8 @@ type HTTPServer struct {
 
 var cfg *config.Config
 
-func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	logger.HTTPLogger.Info().Msgf("http request: ", r)
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("OK"))
 	if err != nil {
@@ -27,6 +28,7 @@ func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func employeeInfoHandler(w http.ResponseWriter, r *http.Request) {
+	logger.HTTPLogger.Info().Msgf("http request: ", r)
 	if !verifyUser(r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -59,9 +61,11 @@ func employeeInfoHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	logger.HTTPLogger.Info().Msgf("http response: ", w)
 }
 
 func absencesInfoHandler(w http.ResponseWriter, r *http.Request) {
+	logger.HTTPLogger.Info().Msgf("http request: ", r)
 	if !verifyUser(r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -91,18 +95,21 @@ func absencesInfoHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	logger.HTTPLogger.Info().Msgf("http response: ", w)
 }
 
 func loadAbsencesData() ([]models.Absences, error) {
 	absencesFilePath := filepath.Join(cfg.HTTPConfig.BaseStoragePath, cfg.HTTPConfig.AbsencesFileName)
 	data, err := os.ReadFile(absencesFilePath)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to load absence data")
 		return nil, err
 	}
 
 	var absences []models.Absences
 	err = json.Unmarshal(data, &absences)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to unmarshal absence data from json")
 		return nil, err
 	}
 
@@ -113,12 +120,14 @@ func loadEmployeesData() ([]models.Employee, error) {
 	absencesFilePath := filepath.Join(cfg.HTTPConfig.BaseStoragePath, cfg.HTTPConfig.EmployeesFileName)
 	data, err := os.ReadFile(absencesFilePath)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to load employee data")
 		return nil, err
 	}
 
 	var employees []models.Employee
 	err = json.Unmarshal(data, &employees)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to unmarshal employee data from json")
 		return nil, err
 	}
 
@@ -229,12 +238,12 @@ func NewHTTPServer() *HTTPServer {
 }
 
 func (hs *HTTPServer) Start() error {
-	log.Printf("HTTP server listening at %v", hs.server.Addr)
+	logger.HTTPLogger.Info().Msgf("HTTP server listening at ", hs.server.Addr)
 	return hs.server.ListenAndServe()
 }
 
 func (hs *HTTPServer) Stop() error {
-	log.Println("Stopping HTTP server")
+	logger.HTTPLogger.Info().Msg("Stopping HTTP server")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return hs.server.Shutdown(ctx)

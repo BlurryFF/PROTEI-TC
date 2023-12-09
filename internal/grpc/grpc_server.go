@@ -3,10 +3,10 @@ package grpcserver
 import (
 	"context"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	pb "uDES/api/proto"
 	"uDES/internal/config"
+	"uDES/internal/logger"
 	"uDES/internal/workers"
 )
 
@@ -14,7 +14,7 @@ func NewUserManagementServer() *UserManagementServer {
 	cfg := config.LoadConfiguration("config.json")
 	pool, err := workers.NewWorkerPool(cfg.GRPCConfig.NumWorkers, cfg.GRPCConfig.QueueSize)
 	if err != nil {
-		log.Printf("failed to create worker pool: %v", err)
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to create worker pool")
 	}
 
 	return &UserManagementServer{
@@ -32,16 +32,18 @@ type UserManagementServer struct {
 func (server *UserManagementServer) Run() error {
 	lis, err := net.Listen("tcp", server.Config.GRPCConfig.IP+server.Config.GRPCConfig.Port)
 	if err != nil {
-		log.Printf("failed to listen: %v", err)
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to listen grpc server")
 	}
 	s := grpc.NewServer()
 	server.WorkerPool.Start()
 	pb.RegisterUserManagementServer(s, server)
-	log.Printf("gRPC server listening at %v", lis.Addr())
+	logger.GRPCLogger.Info().Msgf("gRPC server listening at ", server.Config.GRPCConfig.IP+server.Config.GRPCConfig.Port)
 	return s.Serve(lis)
 }
 
 func (server *UserManagementServer) GetEmployee(_ context.Context, in *pb.GetEmployeeParams) (*pb.EmployeesList, error) {
+
+	logger.GRPCLogger.Info().Any("gRPC request", in).Send()
 	result := make(chan workers.TaskResult)
 
 	req := &workers.GetTask{
@@ -55,13 +57,18 @@ func (server *UserManagementServer) GetEmployee(_ context.Context, in *pb.GetEmp
 
 	employeeData, err := taskResult.GetData().(*pb.EmployeesList), taskResult.GetErr()
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to get employees data from http server")
 		return nil, err
 	}
+
+	logger.GRPCLogger.Info().Any("gRPC response", employeeData).Send()
 
 	return employeeData, nil
 }
 
 func (server *UserManagementServer) GetAbsences(_ context.Context, in *pb.GetAbsencesParams) (*pb.AbsencesList, error) {
+	logger.GRPCLogger.Info().Any("gRPC request", in).Send()
+
 	result := make(chan workers.TaskResult)
 
 	req := &workers.GetTask{
@@ -74,7 +81,11 @@ func (server *UserManagementServer) GetAbsences(_ context.Context, in *pb.GetAbs
 	taskResult := <-result
 	absencesData, err := taskResult.GetData().(*pb.AbsencesList), taskResult.GetErr()
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to get absences data from http server")
 		return nil, err
 	}
+
+	logger.GRPCLogger.Info().Any("gRPC response", absencesData).Send()
+
 	return absencesData, nil
 }

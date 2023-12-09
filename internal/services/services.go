@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/enescakir/emoji"
 	"io"
-	"log"
 	"net/http"
 	pb "uDES/api/proto"
+	"uDES/internal/logger"
 	"uDES/internal/models"
 )
 
@@ -19,9 +19,9 @@ func doRequest(in interface{}, endpoint string) ([]byte, error) {
 	if err := checkHealth(); err != nil {
 		return nil, fmt.Errorf("http server is unavailable: %v", err)
 	}
-
 	jsonValue, err := json.Marshal(in)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to do request to http server")
 		return nil, err
 	}
 
@@ -29,6 +29,7 @@ func doRequest(in interface{}, endpoint string) ([]byte, error) {
 		"POST", baseUrl+endpoint, bytes.NewBuffer(jsonValue),
 	)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to do request to http server")
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -37,13 +38,14 @@ func doRequest(in interface{}, endpoint string) ([]byte, error) {
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to do request to http server")
 		return nil, err
 	}
 	defer response.Body.Close()
 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("Failed to read response body: %s\n", err)
+		logger.WarErrLogger.Error().Err(err).Msg("Failed to read response body")
 		return nil, err
 	}
 
@@ -81,10 +83,11 @@ func HandleGetEmployee(in *pb.GetEmployeeParams) (*pb.EmployeesList, error) {
 	var employeeResponse models.EmployeeResponse
 	data, err := doRequest(in, "employees")
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to get employee data")
 		return nil, err
 	}
 	if err := json.Unmarshal(data, &employeeResponse); err != nil {
-		log.Printf("Failed to unmarshal JSON: %v\n", err)
+		logger.WarErrLogger.Error().Err(err).Msg("failed unmarshall json")
 		return nil, err
 	}
 
@@ -108,10 +111,11 @@ func HandleGetAbsences(in *pb.GetAbsencesParams) (*pb.AbsencesList, error) {
 	var absenceResponse models.AbsencesResponse
 	data, err := doRequest(in, "absences")
 	if err != nil {
+		logger.WarErrLogger.Error().Err(err).Msg("failed to get employee data")
 		return nil, err
 	}
 	if err := json.Unmarshal(data, &absenceResponse); err != nil {
-		log.Printf("Failed to unmarshal JSON: %s\n", err)
+		logger.WarErrLogger.Error().Err(err).Msg("failed to unmarshal json")
 		return nil, err
 	}
 

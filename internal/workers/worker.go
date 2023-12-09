@@ -2,8 +2,8 @@ package workers
 
 import (
 	"errors"
-	"log"
 	"sync"
+	"uDES/internal/logger"
 )
 
 var (
@@ -34,9 +34,11 @@ type WorkerPool struct {
 
 func NewWorkerPool(numWorkers int, channelSize int) (Pool, error) {
 	if numWorkers <= 0 {
+		logger.WarErrLogger.Error().Err(incorrectWorkersSize).Send()
 		return nil, incorrectWorkersSize
 	}
 	if channelSize < 0 {
+		logger.WarErrLogger.Error().Err(incorrectChannelSize).Send()
 		return nil, incorrectChannelSize
 	}
 
@@ -55,14 +57,14 @@ func NewWorkerPool(numWorkers int, channelSize int) (Pool, error) {
 
 func (p *WorkerPool) Start() {
 	p.start.Do(func() {
-		log.Print("starting worker pool")
+		logger.GRPCLogger.Info().Msg("starting worker pool")
 		p.startWorkers()
 	})
 }
 
 func (p *WorkerPool) Stop() {
 	p.stop.Do(func() {
-		log.Print("stopping worker pool")
+		logger.GRPCLogger.Info().Msg("stopping worker pool")
 		close(p.quit)
 	})
 }
@@ -77,16 +79,16 @@ func (p *WorkerPool) AddWork(t Task) {
 func (p *WorkerPool) startWorkers() {
 	for i := 0; i < p.numWorkers; i++ {
 		go func(workerNum int) {
-			log.Printf("starting worker %d", workerNum)
+			logger.GRPCLogger.Info().Msgf("starting worker: %d", workerNum)
 
 			for {
 				select {
 				case <-p.quit:
-					log.Printf("stopping worker %d with quit channel\n", workerNum)
+					logger.GRPCLogger.Info().Msgf("stopping worker %d with quit channel: ", workerNum)
 					return
 				case task, ok := <-p.tasks:
 					if !ok {
-						log.Printf("stopping worker %d with closed tasks channel\n", workerNum)
+						logger.GRPCLogger.Info().Msgf("stopping worker %d with closed task channel: ", workerNum)
 						return
 					}
 					if err := task.Execute(); err != nil {
