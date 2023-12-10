@@ -26,14 +26,6 @@ type EmployeeRequest struct {
 	DateTo    string `json:"dateTo"`
 }
 
-type EmployeeNameRequest struct {
-	PersondIds []int `json:"persondIds"`
-}
-
-type EmployeeNameResponse struct {
-	displayNames map[int]string `json:"displayNames"`
-}
-
 type EmployeeResponse struct {
 	Status string     `json:"status"`
 	Data   []Employee `json:"data"`
